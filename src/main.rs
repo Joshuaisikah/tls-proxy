@@ -6,8 +6,9 @@ mod report;
 mod tls;
 
 use clap::Parser;
-use proxy::bridge::bridge;
-use proxy::upstream::connect_upstream;
+use std::sync::Arc;
+use cert::CertAuthority;
+use proxy::listener::handle_connection;
 
 #[derive(Parser)]
 struct Args {
@@ -20,20 +21,18 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse() ;
     let listener = tokio::net::TcpListener::bind(&args.listen).await?;
+    let ca = Arc::new(CertAuthority::new()?);
     println!("Listening on {}", args.listen);
     loop{
         let (client_stream, client_addr) = listener.accept().await?;
         println!("Accepted connection from {}", client_addr);
         let target =args.target.clone();
-        tokio::spawn(async move {
-            match connect_upstream(target.as_str()).await {
-                Err(e) => eprintln!("Failed to connect upstream: {}", e),
-                Ok(stream) => {
-                    if let Err(e) = bridge(client_stream,stream).await{
-                        eprintln!("Failed to bridge upstream: {}", e);
-                    }
+        let ca = ca.clone();
+        tokio::spawn(async move{
+                if let Err(e)= handle_connection(client_stream,&target,ca).await{
+                    eprintln!("Connection error: {}", e);
                 }
-            }
-        });
+            });
+
     }
 }
