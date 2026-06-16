@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct Report {
     pub timestamp: String,
     pub host: String,

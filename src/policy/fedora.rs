@@ -116,6 +116,9 @@ mod tests {
 
     #[test]
     fn test_load_real_policy_file() {
+        if !std::path::Path::new("/etc/crypto-policies/back-ends/gnutls.config").exists() {
+            return; // Fedora-only file, skip on other systems
+        }
         let policy = FedoraPolicy::load("/etc/crypto-policies/back-ends/gnutls.config");
         assert!(policy.ciphers.contains("AES-256-GCM"));
         assert!(policy.groups.contains("GROUP-X25519"));
