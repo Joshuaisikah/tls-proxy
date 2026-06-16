@@ -2,28 +2,46 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  ci:
+  fmt:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          components: rustfmt
+      - run: cargo fmt --check
 
-      - uses: Swatinem/rust-cache@v2
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo clippy -- -D warnings
 
-      - name: fmt
-        run: cargo fmt --check
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test
 
-      - name: clippy
-        run: cargo clippy -- -D warnings
-
-      - name: build
-        run: cargo build --verbose
-
-      - name: test
-        run: cargo test --verbose
+  bench:
+    name: Bench (compile only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo bench --no-run
